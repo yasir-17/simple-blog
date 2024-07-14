@@ -10,7 +10,7 @@ function CommentForm({ postId, addComment }) {
 
     const newComment = { author, content };
     await addComment(newComment);
-    
+
     // Clear form
     setAuthor('');
     setContent('');

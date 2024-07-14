@@ -2,31 +2,28 @@ import React, { useState, useEffect } from 'react';
 import CommentList from './CommentList';
 import CommentForm from './CommentForm';
 
-function BlogPost({ post, fetchPostWithComments }) {
-  const [showComments, setShowComments] = useState(false);
+function BlogPost({ post }) {
   const [comments, setComments] = useState([]);
+  const [showComments, setShowComments] = useState(false);
 
   useEffect(() => {
     if (showComments) {
       fetchComments();
     }
-  }, [showComments]);
+  }, [showComments, post.id]);
 
   const fetchComments = async () => {
     try {
       const response = await fetch(`http://localhost:8000/api/posts/${post.id}/comments/`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data);
+      } else {
+        console.error('Failed to fetch comments');
       }
-      const data = await response.json();
-      setComments(data);
     } catch (error) {
       console.error('Error fetching comments:', error);
     }
-  };
-
-  const toggleComments = () => {
-    setShowComments(!showComments);
   };
 
   const addComment = async (newComment) => {
@@ -38,27 +35,35 @@ function BlogPost({ post, fetchPostWithComments }) {
         },
         body: JSON.stringify(newComment),
       });
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+      if (response.ok) {
+        const data = await response.json();
+        setComments([...comments, data]);
+      } else {
+        console.error('Failed to add comment');
       }
-      const data = await response.json();
-      setComments([...comments, data]);
     } catch (error) {
       console.error('Error adding comment:', error);
     }
+  };
+
+  const handleCommentDeleted = () => {
+    fetchComments();
   };
 
   return (
     <div className="blog-post">
       <h2>{post.title}</h2>
       <p>{post.content}</p>
-      <small>Created at: {new Date(post.created_at).toLocaleString()}</small>
-      <button onClick={toggleComments}>
+      <button onClick={() => setShowComments(!showComments)}>
         {showComments ? 'Hide Comments' : 'Show Comments'}
       </button>
       {showComments && (
         <>
-          <CommentList comments={comments} />
+          <CommentList
+            comments={comments}
+            postId={post.id}
+            onCommentDeleted={handleCommentDeleted}
+          />
           <CommentForm postId={post.id} addComment={addComment} />
         </>
       )}
